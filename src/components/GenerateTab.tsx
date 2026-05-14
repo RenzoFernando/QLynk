@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeftRight, Clipboard, Download, FileCode, Image as ImageIcon, Link2, Maximize2, Paintbrush, RotateCcw, Save, Shapes, X } from 'lucide-react';
 import type { HistoryItem } from '../types';
@@ -39,7 +39,7 @@ const channelOptions = [
     { value: "whatsapp", label: "WhatsApp" }
 ];
 
-const eccLevels = ["L", "M", "Q", "H"] as const;
+type ErrorLevel = "L" | "M" | "Q" | "H";
 
 const colorPresets = [
     { name: "Clásico", fg: "#000000", bg: "#ffffff" },
@@ -69,7 +69,7 @@ function getErrorLabel(value: number) {
     return "Baja";
 }
 
-function getErrorLevel(value: number): typeof eccLevels[number] {
+function getErrorLevel(value: number): ErrorLevel {
     if (value >= 70) return "H";
     if (value >= 45) return "Q";
     if (value >= 20) return "M";
@@ -100,29 +100,27 @@ export default function GenerateTab({ addToHistory }: GenerateTabProps) {
     const [fg, setFg] = useState(defaultDesign.fg);
     const [bg, setBg] = useState(defaultDesign.bg);
     const [bgImage, setBgImage] = useState<string | null>(null);
-    const [payload, setPayload] = useState("");
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    useEffect(() => {
-        let newPayload = "";
+    const payload = useMemo(() => {
+        if (mode === "text") return fields.text;
+        if (mode === "url") return fields.url;
+        if (mode === "wifi") return `WIFI:S:${fields.ssid};T:${fields.encryption};P:${fields.password};H:${fields.hidden};;`;
+        if (mode === "vcard") return `BEGIN:VCARD\nVERSION:3.0\nN:${fields.fullName}\nORG:${fields.org}\nTEL:${fields.tel}\nEMAIL:${fields.email}\nURL:${fields.website}\nEND:VCARD`;
+        if (mode === "email") return `mailto:${fields.mailTo}?subject=${encodeURIComponent(fields.mailSub)}&body=${encodeURIComponent(fields.mailBody)}`;
 
-        if (mode === "text") newPayload = fields.text;
-        else if (mode === "url") newPayload = fields.url;
-        else if (mode === "wifi") newPayload = `WIFI:S:${fields.ssid};T:${fields.encryption};P:${fields.password};H:${fields.hidden};;`;
-        else if (mode === "vcard") newPayload = `BEGIN:VCARD\nVERSION:3.0\nN:${fields.fullName}\nORG:${fields.org}\nTEL:${fields.tel}\nEMAIL:${fields.email}\nURL:${fields.website}\nEND:VCARD`;
-        else if (mode === "email") newPayload = `mailto:${fields.mailTo}?subject=${encodeURIComponent(fields.mailSub)}&body=${encodeURIComponent(fields.mailBody)}`;
-        else if (mode === "sms") {
+        if (mode === "sms") {
             if (fields.smsType === "whatsapp") {
                 const num = (fields.smsNum || "").replace(/[^\d]/g, "");
                 const text = encodeURIComponent(fields.smsMsg || "");
-                newPayload = num ? `https://wa.me/${num}?text=${text}` : "";
-            } else {
-                newPayload = `smsto:${fields.smsNum}:${fields.smsMsg}`;
+                return num ? `https://wa.me/${num}?text=${text}` : "";
             }
-        }
-        else if (mode === "location") newPayload = `geo:${fields.lat},${fields.lng}`;
 
-        setPayload(newPayload);
+            return `smsto:${fields.smsNum}:${fields.smsMsg}`;
+        }
+
+        if (mode === "location") return `geo:${fields.lat},${fields.lng}`;
+        return "";
     }, [mode, fields]);
 
     const activeModeLabel = useMemo(() => {
@@ -162,17 +160,19 @@ export default function GenerateTab({ addToHistory }: GenerateTabProps) {
 
         const drawSVG = () => {
             const xml = new XMLSerializer().serializeToString(svg);
-            const svg64 = btoa(unescape(encodeURIComponent(xml)));
-            const image64 = 'data:image/svg+xml;base64,' + svg64;
+            const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+            const imageUrl = URL.createObjectURL(svgBlob);
             const img = new Image();
             img.onload = () => {
                 ctx.drawImage(img, marginPx, marginPx, size, size);
+                URL.revokeObjectURL(imageUrl);
                 const a = document.createElement("a");
                 a.href = canvas.toDataURL("image/png");
                 a.download = `qr-${Date.now()}.png`;
                 a.click();
             };
-            img.src = image64;
+            img.onerror = () => URL.revokeObjectURL(imageUrl);
+            img.src = imageUrl;
         };
 
         if (bgImage) {
@@ -197,11 +197,14 @@ export default function GenerateTab({ addToHistory }: GenerateTabProps) {
         const serializer = new XMLSerializer();
         let source = serializer.serializeToString(svgEl);
 
-        if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
-            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        const svgNamespace = `http${"://"}www.w3.org/2000/svg`;
+        const xlinkNamespace = `http${"://"}www.w3.org/1999/xlink`;
+
+        if (!source.includes(`xmlns="${svgNamespace}"`)) {
+            source = source.replace(/^<svg/, `<svg xmlns="${svgNamespace}"`);
         }
-        if (!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)) {
-            source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+        if (!source.includes(`xmlns:xlink="${xlinkNamespace}"`)) {
+            source = source.replace(/^<svg/, `<svg xmlns:xlink="${xlinkNamespace}"`);
         }
 
         source = '<?xml version="1.0" standalone="no"?>\r\n' + source;

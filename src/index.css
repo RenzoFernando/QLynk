@@ -26,6 +26,7 @@
   --radius-lg: 14px;
   --radius-xl: 18px;
   --transition: 180ms ease;
+  --range-progress: 0%;
 }
 
 [data-theme="dark"] {
@@ -507,21 +508,6 @@ a {
   text-align: center;
 }
 
-.color-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.color-control {
-  width: 100%;
-  min-height: 46px;
-  padding: 6px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--surface-muted);
-  cursor: pointer;
-}
 
 .upload-panel, .privacy-note {
   display: flex;
@@ -564,7 +550,7 @@ a {
   align-items: center;
 }
 
-.btn, .button {
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -625,12 +611,12 @@ a {
   background: linear-gradient(135deg, var(--danger-color), var(--danger-hover));
 }
 
-.btn:hover:not(:disabled), .button:hover {
+.btn:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: var(--border-strong);
 }
 
-.btn:active:not(:disabled), .button:active {
+.btn:active:not(:disabled) {
   transform: translateY(1px) scale(0.99);
 }
 
@@ -1428,7 +1414,7 @@ a {
     min-height: 44px;
   }
 
-  .two-columns, .color-grid, .color-picker-grid, .slider-row, .action-grid {
+  .two-columns, .color-picker-grid, .slider-row, .action-grid {
     grid-template-columns: 1fr;
   }
 

@@ -1,7 +1,7 @@
 import { Archive, Clock, Copy, ExternalLink, FileDown, Trash, Upload } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import type { HistoryItem } from '../types';
-import { classifyResult, copy } from '../utils';
+import { classifyResult, copy, openExternalUrl } from '../utils';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Badge from './ui/Badge';
@@ -45,7 +45,7 @@ export default function HistoryTab({ history, saveHistory, notify, privateMode }
                 } else {
                     notify("El JSON no tiene el formato esperado.");
                 }
-            } catch (err) {
+            } catch {
                 notify("Archivo JSON no válido.");
             }
         };
@@ -65,8 +65,7 @@ export default function HistoryTab({ history, saveHistory, notify, privateMode }
         const raw = value.trim();
         const lower = raw.toLowerCase();
 
-        if (lower.startsWith("http://") || lower.startsWith("https://")) {
-            window.open(raw, "_blank", "noopener,noreferrer");
+        if (openExternalUrl(raw)) {
             notify("Recurso abierto en una pestaña nueva.");
             return;
         }

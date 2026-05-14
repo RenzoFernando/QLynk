@@ -16,35 +16,45 @@ function normalizeTheme(value: string | null): ThemeOption {
     return themeOptions.includes(value as ThemeOption) ? value as ThemeOption : "light";
 }
 
+function getInitialHistory() {
+    const saved = localStorage.getItem("qr_history");
+    if (!saved) return [];
+
+    try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed as HistoryItem[] : [];
+    } catch {
+        return [];
+    }
+}
+
+function getInitialTheme() {
+    return normalizeTheme(localStorage.getItem("qr_theme"));
+}
+
+function getInitialPrivateMode() {
+    return localStorage.getItem("qr_private_mode") === "1";
+}
+
 export default function App() {
     const [tab, setTab] = useState("generate");
-    const [theme, setTheme] = useState<ThemeOption>("light");
-    const [privateMode, setPrivateMode] = useState(false);
-    const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [theme, setTheme] = useState<ThemeOption>(getInitialTheme);
+    const [privateMode, setPrivateMode] = useState(getInitialPrivateMode);
+    const [history, setHistory] = useState<HistoryItem[]>(getInitialHistory);
     const [toast, setToast] = useState("");
     const toastTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem("qr_theme", theme);
     }, [theme]);
 
     useEffect(() => {
-        const saved = localStorage.getItem("qr_history");
-        if (saved) {
-            try {
-                setHistory(JSON.parse(saved));
-            } catch (e) {
-                setHistory([]);
+        return () => {
+            if (toastTimerRef.current) {
+                window.clearTimeout(toastTimerRef.current);
             }
-        }
-
-        const savedTheme = localStorage.getItem("qr_theme");
-        const nextTheme = normalizeTheme(savedTheme);
-        setTheme(nextTheme);
-        localStorage.setItem("qr_theme", nextTheme);
-
-        const savedPrivate = localStorage.getItem("qr_private_mode");
-        if (savedPrivate === "1") setPrivateMode(true);
+        };
     }, []);
 
     function saveHistory(newHistory: HistoryItem[]) {
@@ -99,9 +109,7 @@ export default function App() {
                         <SettingsTab
                             theme={theme}
                             setTheme={(t) => {
-                                const nextTheme = normalizeTheme(t);
-                                setTheme(nextTheme);
-                                localStorage.setItem("qr_theme", nextTheme);
+                                setTheme(normalizeTheme(t));
                             }}
                             privateMode={privateMode}
                             setPrivateMode={(v) => {

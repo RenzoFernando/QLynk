@@ -10,6 +10,20 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     fullWidth?: boolean;
 }
 
+const variantClasses: Record<ButtonVariant, string> = {
+    primary: "btn-primary",
+    secondary: "btn-secondary",
+    ghost: "btn-ghost",
+    soft: "btn-soft",
+    danger: "btn-danger"
+};
+
+const sizeClasses: Record<ButtonSize, string> = {
+    small: "btn-small",
+    medium: "btn-medium",
+    large: "btn-large"
+};
+
 export default function Button({
                                    variant = "secondary",
                                    size = "medium",
@@ -21,8 +35,8 @@ export default function Button({
                                }: ButtonProps) {
     const classes = [
         "btn",
-        `btn-${variant}`,
-        `btn-${size}`,
+        variantClasses[variant],
+        sizeClasses[size],
         fullWidth ? "btn-full" : "",
         className
     ].filter(Boolean).join(" ");

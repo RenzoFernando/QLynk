@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, Copy, ExternalLink, ImageUp, ScanLine, StopCircle } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import type { HistoryItem } from '../types';
-import { classifyResult, nowISO, copy } from '../utils';
+import { classifyResult, nowISO, copy, openExternalUrl } from '../utils';
 import FileDropZone from './FileDropZone';
 import Button from './ui/Button';
 import Card from './ui/Card';
@@ -20,6 +20,25 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const scanRegionId = "reader";
     const fileScanRegionId = "file-reader";
+
+    const stopScan = useCallback(async () => {
+        try {
+            const inst = scannerRef.current;
+            if (!inst) {
+                setScanStatus("stopped");
+                return;
+            }
+            if (inst.isScanning) {
+                await inst.stop().catch(() => undefined);
+            }
+            inst.clear();
+        } catch {
+            scannerRef.current = null;
+        } finally {
+            scannerRef.current = null;
+            setScanStatus("stopped");
+        }
+    }, []);
 
     async function startScan() {
         setScanError("");
@@ -44,45 +63,27 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
                     });
                     await stopScan();
                 },
-                () => {}
+                () => undefined
             );
-        } catch (e) {
+        } catch {
             setScanStatus("error");
             setScanError("Error de cámara. Revisa permisos o usa HTTPS.");
             await stopScan();
         }
     }
 
-    async function stopScan() {
-        try {
-            const inst = scannerRef.current;
-            if (!inst) {
-                setScanStatus("stopped");
-                return;
-            }
-            if (inst.isScanning) {
-                await inst.stop().catch(() => {});
-            }
-            inst.clear();
-        } catch {
-        } finally {
-            scannerRef.current = null;
-            setScanStatus("stopped");
-        }
-    }
-
     useEffect(() => {
         return () => {
-            stopScan();
+            void stopScan();
         };
-    }, []);
+    }, [stopScan]);
 
     async function scanFromImage(file: File) {
         setScanError("");
         setScanResult("");
+        const inst = new Html5Qrcode(fileScanRegionId);
 
         try {
-            const inst = new Html5Qrcode(fileScanRegionId);
             const decodedText = await inst.scanFile(file, true);
             setScanResult(decodedText);
             addToHistory({
@@ -92,9 +93,10 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
                 meta: { from: "image" },
                 value: decodedText,
             });
-            inst.clear();
-        } catch (e) {
+        } catch {
             setScanError("No se pudo leer el QR en la imagen. Intenta con una foto más nítida.");
+        } finally {
+            inst.clear();
         }
     }
 
@@ -113,8 +115,8 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
                     <div id={fileScanRegionId} style={{ display: 'none' }} />
 
                     <div className="btns scan-actions">
-                        <Button variant="primary" icon={<ScanLine size={17} aria-hidden="true" />} onClick={startScan} disabled={scanStatus === "running"}>Iniciar cámara</Button>
-                        <Button variant="secondary" icon={<StopCircle size={17} aria-hidden="true" />} onClick={stopScan} disabled={scanStatus !== "running"}>Detener</Button>
+                        <Button variant="primary" icon={<ScanLine size={17} aria-hidden="true" />} onClick={() => void startScan()} disabled={scanStatus === "running"}>Iniciar cámara</Button>
+                        <Button variant="secondary" icon={<StopCircle size={17} aria-hidden="true" />} onClick={() => void stopScan()} disabled={scanStatus !== "running"}>Detener</Button>
                     </div>
 
                     {scanError && <div className="field-error floating-error">{scanError}</div>}
@@ -131,7 +133,7 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
                         label="Arrastra y suelta una imagen aquí"
                         helperText="Formatos: JPG, PNG, WEBP. Tip: buena luz, sin blur."
                         buttonText="Seleccionar imagen"
-                        onFile={scanFromImage}
+                        onFile={(file) => void scanFromImage(file)}
                     />
                 </Card>
             </div>
@@ -158,7 +160,7 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
 
                                 <div className="action-grid">
                                     {scanInfo.action === "open" ? (
-                                        <Button variant="primary" icon={<ExternalLink size={17} aria-hidden="true" />} onClick={() => window.open(scanResult, "_blank")}>Abrir acción</Button>
+                                        <Button variant="primary" icon={<ExternalLink size={17} aria-hidden="true" />} onClick={() => openExternalUrl(scanResult)}>Abrir acción</Button>
                                     ) : (
                                         <Button variant="primary" icon={<Copy size={17} aria-hidden="true" />} onClick={() => copy(scanResult)}>Copiar texto</Button>
                                     )}
