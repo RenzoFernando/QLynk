@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, Copy, ExternalLink, ImageUp, ScanLine, StopCircle } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import type { HistoryItem } from '../types';
 import { classifyResult, nowISO, copy } from '../utils';
 import FileDropZone from './FileDropZone';
+import Button from './ui/Button';
+import Card from './ui/Card';
+import Badge from './ui/Badge';
+import EmptyState from './ui/EmptyState';
 
 interface ScanTabProps {
     addToHistory: (item: HistoryItem) => void;
@@ -96,60 +101,79 @@ export default function ScanTab({ addToHistory }: ScanTabProps) {
     const scanInfo = useMemo(() => classifyResult(scanResult), [scanResult]);
 
     return (
-        <div className="grid">
-            <div className="card">
-                <h2>Escanear con cámara</h2>
+        <div className="dashboard-grid scan-grid">
+            <div className="content-stack">
+                <Card
+                    eyebrow="Escanear"
+                    title="Lectura con cámara"
+                    description="Usa la cámara del dispositivo para detectar un QR y guardar el resultado en la biblioteca."
+                    icon={<Camera size={18} aria-hidden="true" />}
+                >
+                    <div id={scanRegionId} className={`scanner-view ${scanStatus === "running" ? "running" : ""}`} />
+                    <div id={fileScanRegionId} style={{ display: 'none' }} />
 
-                <div id={scanRegionId} className="scanner-view" />
-                <div id={fileScanRegionId} style={{ display: 'none' }} />
+                    <div className="btns scan-actions">
+                        <Button variant="primary" icon={<ScanLine size={17} aria-hidden="true" />} onClick={startScan} disabled={scanStatus === "running"}>Iniciar cámara</Button>
+                        <Button variant="secondary" icon={<StopCircle size={17} aria-hidden="true" />} onClick={stopScan} disabled={scanStatus !== "running"}>Detener</Button>
+                    </div>
 
-                <div className="btns" style={{ marginTop: 16 }}>
-                    <button className="primary" onClick={startScan} disabled={scanStatus === "running"}>Iniciar cámara</button>
-                    <button className="secondary" onClick={stopScan} disabled={scanStatus !== "running"}>Detener</button>
-                </div>
+                    {scanError && <div className="field-error floating-error">{scanError}</div>}
+                </Card>
 
-                {scanError && <div className="hint error">{scanError}</div>}
-
-                <hr className="divider" />
-
-                <h2>Leer desde imagen</h2>
-                <FileDropZone
-                    accept="image/*"
-                    label="Arrastra y suelta una imagen aquí"
-                    helperText="Formatos: JPG, PNG, WEBP. Tip: buena luz, sin blur."
-                    buttonText="Seleccionar imagen"
-                    onFile={scanFromImage}
-                />
+                <Card
+                    eyebrow="Imagen"
+                    title="Leer desde archivo"
+                    description="Arrastra una imagen o selecciónala desde tu equipo para intentar leer el código."
+                    icon={<ImageUp size={18} aria-hidden="true" />}
+                >
+                    <FileDropZone
+                        accept="image/*"
+                        label="Arrastra y suelta una imagen aquí"
+                        helperText="Formatos: JPG, PNG, WEBP. Tip: buena luz, sin blur."
+                        buttonText="Seleccionar imagen"
+                        onFile={scanFromImage}
+                    />
+                </Card>
             </div>
 
-            <div className="card">
-                <h2>Resultado</h2>
+            <aside className="preview-column">
+                <Card
+                    eyebrow="Resultado"
+                    title="Lectura actual"
+                    description="El resultado se clasifica automáticamente para sugerir la acción correcta."
+                    icon={<ScanLine size={18} aria-hidden="true" />}
+                    sticky
+                >
+                    <div className="result-panel">
+                        {scanResult ? (
+                            <>
+                                <div className="result-top">
+                                    <Badge tone="accent">{scanInfo.type}</Badge>
+                                    <span className="mono text-small">{new Date().toLocaleString()}</span>
+                                </div>
 
-                <div className="result-container">
-                    {scanResult ? (
-                        <div style={{ width: "100%" }}>
-                            <div className="itemTop">
-                                <span className="badge">{scanInfo.type}</span>
-                                <span className="mono text-small">{new Date().toLocaleString()}</span>
-                            </div>
+                                <div className="result-value mono">
+                                    {scanResult}
+                                </div>
 
-                            <div className="itemBody mono">
-                                {scanResult}
-                            </div>
-
-                            <div className="btns" style={{ marginTop: 16 }}>
-                                {scanInfo.action === "open" ? (
-                                    <button className="primary" onClick={() => window.open(scanResult, "_blank")}>Abrir link / Acción</button>
-                                ) : (
-                                    <button className="primary" onClick={() => copy(scanResult)}>Copiar texto</button>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="hint">Esperando lectura...</div>
-                    )}
-                </div>
-            </div>
+                                <div className="action-grid">
+                                    {scanInfo.action === "open" ? (
+                                        <Button variant="primary" icon={<ExternalLink size={17} aria-hidden="true" />} onClick={() => window.open(scanResult, "_blank")}>Abrir acción</Button>
+                                    ) : (
+                                        <Button variant="primary" icon={<Copy size={17} aria-hidden="true" />} onClick={() => copy(scanResult)}>Copiar texto</Button>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <EmptyState
+                                icon={<ScanLine size={40} aria-hidden="true" />}
+                                title="Esperando lectura"
+                                description="Inicia la cámara o carga una imagen para ver aquí el contenido detectado."
+                            />
+                        )}
+                    </div>
+                </Card>
+            </aside>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { HistoryItem } from './types';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -7,9 +7,18 @@ import ScanTab from './components/ScanTab';
 import HistoryTab from './components/HistoryTab';
 import SettingsTab from './components/SettingsTab';
 
+type ThemeOption = "light" | "dark" | "light-contrast" | "dark-contrast";
+
+const themeOptions: ThemeOption[] = ["light", "dark", "light-contrast", "dark-contrast"];
+
+function normalizeTheme(value: string | null): ThemeOption {
+    if (value === "contrast") return "dark-contrast";
+    return themeOptions.includes(value as ThemeOption) ? value as ThemeOption : "light";
+}
+
 export default function App() {
     const [tab, setTab] = useState("generate");
-    const [theme, setTheme] = useState("dark");
+    const [theme, setTheme] = useState<ThemeOption>("light");
     const [privateMode, setPrivateMode] = useState(false);
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [toast, setToast] = useState("");
@@ -30,7 +39,9 @@ export default function App() {
         }
 
         const savedTheme = localStorage.getItem("qr_theme");
-        if (savedTheme) setTheme(savedTheme);
+        const nextTheme = normalizeTheme(savedTheme);
+        setTheme(nextTheme);
+        localStorage.setItem("qr_theme", nextTheme);
 
         const savedPrivate = localStorage.getItem("qr_private_mode");
         if (savedPrivate === "1") setPrivateMode(true);
@@ -43,7 +54,7 @@ export default function App() {
 
     function addToHistory(item: HistoryItem) {
         if (privateMode) {
-            showToast("Modo privado activo: no se guardó en el historial.");
+            showToast("Modo privado activo: no se guardó en la biblioteca.");
             return;
         }
 
@@ -53,7 +64,7 @@ export default function App() {
             return newHistory;
         });
 
-        showToast("¡Guardado en el historial con éxito!");
+        showToast("Guardado en la biblioteca.");
     }
 
     function showToast(msg: string) {
@@ -68,7 +79,7 @@ export default function App() {
         <div className="app-wrapper">
             {toast && <div className="toast">{toast}</div>}
 
-            <div className="container">
+            <div className="app-shell">
                 <Header tab={tab} setTab={setTab} />
 
                 <main className="main-content">
@@ -88,8 +99,9 @@ export default function App() {
                         <SettingsTab
                             theme={theme}
                             setTheme={(t) => {
-                                setTheme(t);
-                                localStorage.setItem("qr_theme", t);
+                                const nextTheme = normalizeTheme(t);
+                                setTheme(nextTheme);
+                                localStorage.setItem("qr_theme", nextTheme);
                             }}
                             privateMode={privateMode}
                             setPrivateMode={(v) => {

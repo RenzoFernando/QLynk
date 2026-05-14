@@ -1,4 +1,6 @@
-import React, { useCallback, useId, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
+import type { ChangeEvent, DragEvent } from 'react';
+import { ImageUp } from 'lucide-react';
 
 interface FileDropZoneProps {
     accept?: string;
@@ -20,24 +22,24 @@ export default function FileDropZone({
     const inputId = useId();
     const [isDragging, setIsDragging] = useState(false);
 
-    const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) onFile(file);
         e.target.value = '';
     }, [onFile]);
 
-    const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const onDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         if (disabled) return;
         setIsDragging(true);
     }, [disabled]);
 
-    const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const onDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
     }, []);
 
-    const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const onDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         if (disabled) return;
         setIsDragging(false);
@@ -62,12 +64,17 @@ export default function FileDropZone({
             />
 
             <div className="dropzone-inner">
-                <div className="dropzone-title">{label}</div>
-                {helperText && <div className="hint">{helperText}</div>}
+                <div className="dropzone-icon">
+                    <ImageUp size={28} aria-hidden="true" />
+                </div>
+                <div>
+                    <div className="dropzone-title">{label}</div>
+                    {helperText && <div className="field-hint">{helperText}</div>}
+                </div>
 
                 <div className="btns">
-                    <label htmlFor={inputId} className={`button primary cursor-pointer`}>
-                        {buttonText}
+                    <label htmlFor={inputId} className="btn btn-primary btn-medium cursor-pointer">
+                        <span>{buttonText}</span>
                     </label>
                 </div>
             </div>

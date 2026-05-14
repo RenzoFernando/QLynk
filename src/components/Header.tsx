@@ -1,4 +1,3 @@
-import React from 'react';
 import TabBar from './TabBar';
 import { APP_NAME, APP_TAGLINE } from '../config/appConfig';
 
