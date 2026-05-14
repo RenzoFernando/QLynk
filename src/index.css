@@ -112,10 +112,11 @@ body {
 
 .brand-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+  text-align: center;
 }
 
 .brand h1 {
@@ -523,11 +524,28 @@ button:disabled {
 
 .footer {
   text-align: center;
-  padding: 24px 20px;
-  margin-top: 40px;
+  padding: 12px 20px;
+  margin-top: 28px;
   background: var(--surface-color);
   border-top: 1px solid var(--border-color);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   font-weight: 700;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.footer-link {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  color: var(--primary-color);
 }
